@@ -1,0 +1,81 @@
+body {
+     font-family: Arial, sans-serif;
+     margin: 0;
+     padding: 0;
+ }
+ 
+ .container {
+     display: flex;
+     flex-direction: column;
+     min-height: 100vh;
+ }
+ 
+ header {
+     text-align: center;
+     padding: 10px;
+     background-color: #f0f0f0;
+ }
+ 
+ header h1 {
+     margin: 0;
+ }
+ 
+ button {
+     margin: 5px;
+     padding: 10px 20px;
+     border: none;
+     background-color: #007bff;
+     color: #fff;
+     cursor: pointer;
+ }
+ 
+ button:hover {
+     background-color: #0056b3;
+ }
+ 
+ main {
+     flex: 1;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     padding: 20px;
+ }
+ 
+ .scanner {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+ }
+ 
+ #scanner-image-container {
+     border: 2px solid #ddd;
+     padding: 10px;
+     background: #fff;
+     max-width: 80%;
+     max-height: 400px;
+     overflow: hidden;
+ }
+ 
+ #scanner-image {
+     max-width: 100%;
+     max-height: 100%;
+ }
+ 
+ .controls {
+     margin-top: 20px;
+ }
+ 
+ select {
+     margin: 5px;
+ }
+ 
+ #progress-bar-container {
+     margin-top: 20px;
+     width: 100%;
+     max-width: 500px;
+ }
+ 
+ progress {
+     width: 100%;
+ }
+ 
