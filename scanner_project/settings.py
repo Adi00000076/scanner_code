@@ -25,7 +25,7 @@ SECRET_KEY = '7i*ea)pi8x%31%r124m(^z!ud3pta5exi9cqaw!m&^@5k=8ew('
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['99.99.96.12', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['99.99.96.12', 'localhost', '127.0.0.1','99.99.96.31']
 
 
 # Application definition
@@ -47,6 +47,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
 ]
 
 ROOT_URLCONF = 'scanner_project.urls'

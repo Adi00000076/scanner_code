@@ -103,11 +103,12 @@
             margin-right: 10px;
         }
 
+        /* Additional Styles for Image Visualization */
         #result {
             text-align: center;
             margin-top: 20px;
-            max-height: 100%; /* Ensure the container uses all available height */
-            overflow: hidden; /* Prevent overflow */
+            max-height: 100%; /* Adjust this to fit within the preview area */
+            overflow: hidden; /* Hide any overflow */
         }
 
         #result img {
@@ -115,7 +116,7 @@
             max-height: 100%;
             border: 2px solid #007BFF;
             border-radius: 8px;
-            object-fit: contain; /* Ensure image scales correctly */
+            object-fit: contain; /* Ensure the image scales correctly */
         }
 
         #result p {
@@ -214,28 +215,34 @@
             const zoomLevel = document.getElementById('zoomLevel').value;
             const autoScan = document.getElementById('autoScan').checked;
 
-            fetch("{% url 'scan_document' %}", {
-                method: "POST",
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    paper_size: paperSize,
-                    color_mode: colorMode,
-                    zoom_level: zoomLevel,
-                    auto_scan: autoScan
-                })
-            })
+            fetch('http://99.99.96.12:8000/scan/', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+        'paper_size': 'A4',
+        'color_mode': 'Color',
+        'auto_scan': 'true',
+        'zoom_level': '100',
+        'num_pages': '1',
+    }),
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch(error => console.error('Error:', error));
+
             .then(response => response.json())
             .then(data => {
-                const resultContainer = document.getElementById('result');
-                if (data.image_url) {
-                    resultContainer.innerHTML = '<img src="' + data.image_url + '" alt="Scanned Image">';
+                if (data.image_urls) {
+                    let imagesHtml = '';
+                    data.image_urls.forEach(url => {
+                        imagesHtml += '<img src="' + url + '" alt="Scanned Image">';
+                    });
+                    document.getElementById('result').innerHTML = imagesHtml;
                 } else if (data.error) {
-                    resultContainer.textContent = "Error: " + data.error;
+                    document.getElementById('result').textContent = "Error: " + data.error;
                 }
-                resultContainer.scrollTop = 0; // Ensure the container scrolls to the top
             })
             .catch(error => {
                 document.getElementById('result').textContent = "Error: " + error.message;

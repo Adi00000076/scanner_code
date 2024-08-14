@@ -1,66 +1,106 @@
 import os
 import uuid
 from datetime import datetime
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.http import JsonResponse
 from django.conf import settings
 import win32com.client
 import pythoncom
 import logging
+from PIL import Image
+import time
+
+from django.views.decorators.csrf import csrf_exempt
+
+
+
 
 logger = logging.getLogger(__name__)
 
+def rotate_image(image_path, angle):
+    """Rotate image by a specific angle."""
+    with Image.open(image_path) as img:
+        rotated_img = img.rotate(angle, expand=True)
+        rotated_img.save(image_path)
+
+def resize_image(image_path, zoom_factor):
+    """Resize image to zoom in or out."""
+    with Image.open(image_path) as img:
+        width, height = img.size
+        new_size = (int(width * zoom_factor), int(height * zoom_factor))
+        resized_img = img.resize(new_size, Image.ANTIALIAS)
+        resized_img.save(image_path)
+        
+@csrf_exempt
 def scan_document(request):
     if request.method == 'POST':
         try:
             pythoncom.CoInitialize()
             wia = win32com.client.Dispatch("WIA.CommonDialog")
             logger.info("WIA CommonDialog dispatched successfully.")
+
+            device_manager = win32com.client.Dispatch("WIA.DeviceManager")
+            logger.info("WIA DeviceManager dispatched successfully.")
             
-            scanner = wia.ShowSelectDevice(1, True, False)
-            if scanner:
-                # Retrieve user options
-                paper_size = request.POST.get('paper_size', 'A4')
-                color_mode = request.POST.get('color_mode', 'Color')
-                auto_scan = request.POST.get('auto_scan', False)
-                zoom_level = int(request.POST.get('zoom_level', 100))
+            devices = device_manager.DeviceInfos
+            logger.info(f"Number of devices found: {devices.Count}")
 
-                try:
-                    scan_item = scanner.Items[1]
+            if devices.Count == 0:
+                logger.error("No scanner devices found.")
+                return JsonResponse({"error": "No scanner devices found."}, status=400)
+            
+            # Directly access the default scanner
+            default_device = devices.Item(1).Connect()  # Assuming the first device is the default one
+            scan_item = default_device.Items[1]
 
-                    # Set scan properties based on user selection
-                    if color_mode == 'Grayscale':
-                        scan_item.Properties("6146").Value = 2  # 1: Color, 2: Grayscale
-                    else:
-                        scan_item.Properties("6146").Value = 1  # 1: Color, 2: Grayscale
-                    
-                    # Set zoom level by adjusting DPI
-                    dpi = int(300 * (zoom_level / 100))
-                    scan_item.Properties("6147").Value = dpi  # Horizontal DPI
-                    scan_item.Properties("6148").Value = dpi  # Vertical DPI
+            logger.info(f"Received request data: {request.POST}")
 
-                    image = scan_item.Transfer()
+            # Retrieve user options
+            paper_size = request.POST.get('paper_size', 'A4')
+            color_mode = request.POST.get('color_mode', 'Color')
+            auto_scan = request.POST.get('auto_scan', False)
+            zoom_level = int(request.POST.get('zoom_level', 100))
+            num_pages = int(request.POST.get('num_pages', 1))  # Number of pages to scan
 
-                    # Generate a unique filename
-                    unique_filename = f"scanned_image_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex}.jpg"
-                    output_file = os.path.join(settings.MEDIA_ROOT, unique_filename)
+            scanned_files = []
 
-                    # Save scanned image
-                    image.SaveFile(output_file)
-                    logger.info(f"Scanned image saved to {output_file}")
+            for page in range(num_pages):
+                retry_attempts = 3
+                for attempt in range(retry_attempts):
+                    try:
+                        # Set scan properties based on user selection
+                        if color_mode == 'Grayscale':
+                            scan_item.Properties("6146").Value = 2  # 1: Color, 2: Grayscale
+                        else:
+                            scan_item.Properties("6146").Value = 1  # 1: Color, 2: Grayscale
 
-                    return JsonResponse({"image_url": settings.MEDIA_URL + unique_filename})
+                        # Set zoom level by adjusting DPI
+                        dpi = int(300 * (zoom_level / 100))
+                        scan_item.Properties("6147").Value = dpi  # Horizontal DPI
+                        scan_item.Properties("6148").Value = dpi  # Vertical DPI
 
-                except Exception as scan_error:
-                    error_code = scan_error.args[2][5]
-                    logger.error(f"Scan error: {scan_error}")
-                    if error_code == -2145320957:
-                        return JsonResponse({"error": "The document feeder is empty. Please add documents to the feeder and try again."}, status=400)
-                    else:
-                        return JsonResponse({"error": str(scan_error)}, status=500)
-            else:
-                logger.error("No scanner was found or selected.")
-                return JsonResponse({"error": "No scanner was found or selected."}, status=400)
+                        image = scan_item.Transfer()
+
+                        # Generate a unique filename for each page
+                        unique_filename = f"scanned_image_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex}_page_{page+1}.jpg"
+                        output_file = os.path.join(settings.MEDIA_ROOT, unique_filename)
+
+                        # Save scanned image
+                        image.SaveFile(output_file)
+                        logger.info(f"Scanned image page {page+1} saved to {output_file}")
+
+                        # Optionally rotate or resize the image
+                        # rotate_image(output_file, 90)  # Rotate by 90 degrees
+                        # resize_image(output_file, 0.8)  # Zoom out by 80%
+
+                        scanned_files.append(settings.MEDIA_URL + unique_filename)
+                        break  # Exit retry loop on success
+
+                    except Exception as scan_error:
+                        logger.error(f"Error scanning page {page+1} (attempt {attempt+1}): {scan_error}")
+                        time.sleep(2)  # Wait before retrying
+
+            return JsonResponse({"image_urls": scanned_files})
 
         except Exception as e:
             logger.error(f"Unexpected error: {e}")

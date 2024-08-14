@@ -1,11 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Document</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        /* Add your styles here */
+        .home {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .home a {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 1.2em;
+        }
+        .home a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-     <h1>Home pronter applicatin process code </h1>
+    <div class="home">
+        <h1>Welcome to the Scanner App</h1>
+        <p><a href="{% url 'scan_document' %}">Go to Scan Document Page</a></p>
+    </div>
 </body>
 </html>
