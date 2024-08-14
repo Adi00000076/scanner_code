@@ -15,9 +15,9 @@ def scan_document(request):
         try:
             pythoncom.CoInitialize()
             wia = win32com.client.Dispatch("WIA.CommonDialog")
-            print(wia)
+            logger.info("WIA CommonDialog dispatched successfully.")
+            
             scanner = wia.ShowSelectDevice(1, True, False)
-
             if scanner:
                 # Retrieve user options
                 paper_size = request.POST.get('paper_size', 'A4')
@@ -82,4 +82,3 @@ def cancel_scan(request):
 
 def home(request):
     return render(request, 'scanner_app/home.html')
-

@@ -106,12 +106,16 @@
         #result {
             text-align: center;
             margin-top: 20px;
+            max-height: 100%; /* Ensure the container uses all available height */
+            overflow: hidden; /* Prevent overflow */
         }
 
         #result img {
             max-width: 100%;
+            max-height: 100%;
             border: 2px solid #007BFF;
             border-radius: 8px;
+            object-fit: contain; /* Ensure image scales correctly */
         }
 
         #result p {
@@ -210,7 +214,7 @@
             const zoomLevel = document.getElementById('zoomLevel').value;
             const autoScan = document.getElementById('autoScan').checked;
 
-            fetch("{% url 'scan' %}", {
+            fetch("{% url 'scan_document' %}", {
                 method: "POST",
                 headers: {
                     'X-CSRFToken': '{{ csrf_token }}',
@@ -225,11 +229,13 @@
             })
             .then(response => response.json())
             .then(data => {
+                const resultContainer = document.getElementById('result');
                 if (data.image_url) {
-                    document.getElementById('result').innerHTML = '<img src="' + data.image_url + '" alt="Scanned Image">';
+                    resultContainer.innerHTML = '<img src="' + data.image_url + '" alt="Scanned Image">';
                 } else if (data.error) {
-                    document.getElementById('result').textContent = "Error: " + data.error;
+                    resultContainer.textContent = "Error: " + data.error;
                 }
+                resultContainer.scrollTop = 0; // Ensure the container scrolls to the top
             })
             .catch(error => {
                 document.getElementById('result').textContent = "Error: " + error.message;
